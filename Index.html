@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fretboard">
+<link rel="apple-touch-icon" href="icon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manche de Guitare</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161d;
+    --surface2: #1e1e28;
+    --border: #2a2a38;
+    --accent: #c8a97e;
+    --accent2: #7eb8c8;
+    --accent3: #c87ea9;
+    --text: #e8e4dc;
+    --text-muted: #7a7880;
+    --string1: #e8c87a;
+    --string2: #e8a87a;
+    --fret-color: #3a3a4a;
+    --nut: #c8c0a8;
+    --note-root: #c8a97e;
+    --note-third: #7eb8c8;
+    --note-fifth: #a8c87e;
+    --note-scale: #c87ea9;
+    --green: #7ec88a;
+    --red: #c87e7e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--text-muted); }
+
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 12px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-wrap: wrap;
+  }
+
+  .nav-btn {
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+
+  .nav-btn:hover { color: var(--text); border-color: var(--accent); }
+  .nav-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+  .panel { display: none; padding: 24px 32px; }
+  .panel.active { display: block; }
+
+  /* FRETBOARD */
+  .fretboard-container {
+    overflow-x: auto;
+    padding: 12px 0 20px;
+  }
+
+  .fretboard-wrap {
+    position: relative;
+    display: inline-block;
+    min-width: 800px;
+  }
+
+  .fretboard {
+    position: relative;
+    background: linear-gradient(180deg, #2a1f0e 0%, #3d2d14 50%, #2a1f0e 100%);
+    border-radius: 4px;
+    padding: 24px 0;
+    border: 2px solid #4a3820;
+  }
+
+  .string-row {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    position: relative;
+  }
+
+  .string-name {
+    width: 32px;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .nut {
+    width: 14px;
+    background: var(--nut);
+    height: 100%;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .fret-cell {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border-right: 2px solid var(--fret-color);
+    cursor: pointer;
+  }
+
+  .fret-cell::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(180,160,100,0.4), rgba(180,160,100,0.7), rgba(180,160,100,0.4));
+    pointer-events: none;
+  }
+
+  .string-row:nth-child(1) .fret-cell::after,
+  .string-row:nth-child(2) .fret-cell::after { height: 1.5px; }
+  .string-row:nth-child(5) .fret-cell::after,
+  .string-row:nth-child(6) .fret-cell::after { height: 3px; }
+
+  .note-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    position: relative;
+    z-index: 3;
+    transition: transform 0.1s;
+    cursor: pointer;
+  }
+
+  .note-dot:hover { transform: scale(1.1); }
+
+  .dot-root { background: var(--note-root); color: var(--bg); }
+  .dot-third { background: var(--note-third); color: var(--bg); }
+  .dot-fifth { background: var(--note-fifth); color: var(--bg); }
+  .dot-scale { background: var(--note-scale); color: var(--bg); }
+  .dot-other { background: #2a2a3a; color: var(--text-muted); border: 1px solid var(--border); }
+
+  .fret-numbers {
+    display: flex;
+    padding-left: 46px;
+    margin-top: 8px;
+  }
+
+  .fret-num {
+    flex: 1;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .fret-marker {
+    position: absolute;
+    bottom: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transform: translateX(-50%);
+  }
+
+  /* CONTROLS */
+  .controls-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .control-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  select, input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    outline: none;
+  }
+
+  select:focus, input:focus { border-color: var(--accent); }
+
+  .btn {
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .btn.primary:hover { background: #d4b98e; }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+
+  /* QUIZ */
+  .quiz-area {
+    max-width: 600px;
+  }
+
+  .quiz-prompt {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .quiz-question {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .quiz-target {
+    font-size: 48px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    margin: 8px 0;
+  }
+
+  .quiz-string {
+    font-size: 16px;
+    color: var(--text-muted);
+  }
+
+  .fret-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .fret-btn {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fret-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .fret-btn.correct { background: var(--green); color: var(--bg); border-color: var(--green); }
+  .fret-btn.wrong { background: var(--red); color: var(--bg); border-color: var(--red); }
+  .fret-btn.reveal { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
+
+  .score-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-radius: 8px;
+  }
+
+  .score-item {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .score-val { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 18px; }
+  .score-val.green { color: var(--green); }
+  .score-val.red { color: var(--red); }
+
+  .feedback {
+    text-align: center;
+    height: 24px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .feedback.ok { color: var(--green); }
+  .feedback.ko { color: var(--red); }
+
+  /* SCALE EXPLORER */
+  .scale-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .info-card h3 {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 10px;
+  }
+
+  .note-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .note-pill {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .note-pill.root { background: var(--note-root); color: var(--bg); border-color: var(--note-root); }
+  .note-pill.third { background: var(--note-third); color: var(--bg); border-color: var(--note-third); }
+  .note-pill.fifth { background: var(--note-fifth); color: var(--bg); border-color: var(--note-fifth); }
+
+  .positions-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .pos-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+
+  .pos-btn:hover { color: var(--text); border-color: var(--accent3); }
+  .pos-btn.active { background: var(--accent3); color: var(--bg); border-color: var(--accent3); }
+
+  /* IMPRO */
+  .impro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .impro-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .impro-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .impro-card p, .impro-card li {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .impro-card ul { padding-left: 16px; }
+
+  .tip-box {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 12px;
+  }
+
+  .tip-box p { font-size: 13px; line-height: 1.6; color: var(--text); }
+  .tip-box .tip-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-family: 'Space Mono', monospace; margin-bottom: 4px; }
+
+  .interval-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .interval-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .interval-table td {
+    padding: 6px 10px;
+    border-top: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .interval-table td:first-child { color: var(--accent); }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 600px) {
+    header, nav, .panel { padding-left: 16px; padding-right: 16px; }
+    .scale-info, .impro-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">FRETBOARD <span>//</span> EXPLORER</div>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="showPanel('explorer')">🎸 Manche</button>
+  <button class="nav-btn" onclick="showPanel('quiz')">🎯 Notes Quiz</button>
+  <button class="nav-btn" onclick="showPanel('scales')">🎵 Gammes & Positions</button>
+  <button class="nav-btn" onclick="showPanel('triads')">🔺 Triades</button>
+  <button class="nav-btn" onclick="showPanel('impro')">⚡ Impro</button>
+</nav>
+
+<!-- PANEL 1: EXPLORER -->
+<div class="panel active" id="panel-explorer">
+  <h2>Explorateur de manche</h2>
+
+  <div class="controls-row">
+    <div class="control-group">
+      <span class="control-label">Tonique</span>
+      <select id="exp-root" onchange="updateExplorer()">
+        <option>C</option><option>C#</option><option>D</option><option>D#</option>
+        <option>E</option><option>F</option><option>F#</option><option>G</option>
+        <option>G#</option><option>A</option><option>A#</option><option>B</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Mode / Gamme</span>
+      <select id="exp-scale" onchange="updateExplorer()">
+        <option value="major">Majeure</option>
+        <option value="minor">Mineure naturelle</option>
+        <option value="pentatonicMaj">Pentatonique Majeure</option>
+        <option value="pentatonicMin">Pentatonique Mineure</option>
+        <option value="blues">Blues</option>
+        <option value="dorian">Dorien</option>
+        <option value="mixolydian">Mixolydien</option>
+        <option value="harmonicMinor">Mineure harmonique</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Affichage</span>
+      <select id="exp-display" onchange="updateExplorer()">
+        <option value="names">Noms des notes</option>
+        <option value="degrees">Degrés (1 2 3…)</option>
+        <option value="intervals">Intervalles</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Frets</span>
+      <select id="exp-frets" onchange="updateExplorer()">
+        <option value="12">0 – 12</option>
+        <option value="7">0 – 7</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-root)"></div> Tonique</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-third)"></div> Tierce</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-fifth)"></div> Quinte</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-scale)"></div> Gamme</div>
+  </div>
+
+  <div class="fretboard-container">
+    <div class="fretboard-wrap">
+      <div class="fretboard" id="main-fretboard"></div>
+      <div class="fret-numbers" id="fret-numbers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 2: QUIZ -->
+<div class="panel" id="panel-quiz">
+  <h2>Entraînement aux notes</h2>
+
+  <div class="score-bar">
+    <div class="score-item">
+      <span class="score-val green" id="q-correct">0</span>
+      <span>✓</span>
+    </div>
+    <div class="score-item">
+      <span class="score-val red" id="q-wrong">0</span>
+      <span>✗</span>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:8px;">
+      <select id="q-mode" style="font-size:12px;">
+        <option value="allStrings">Toutes les cordes</option>
+        <option value="string6">Corde 6 (Mi grave)</option>
+        <option value="string5">Corde 5 (La)</option>
+        <option value="string4">Corde 4 (Ré)</option>
+        <option value="string3">Corde 3 (Sol)</option>
+      </select>
+      <button class="btn primary" onclick="startQuiz()">Nouveau</button>
+    </div>
+  </div>
+
+  <div class="quiz-area">
+    <div class="quiz-prompt">
+      <div class="quiz-question">Trouve cette note sur :</div>
+      <div class="quiz-target" id="q-note">—</div>
+      <div class="quiz-string" id="q-string">Corde —</div>
+    </div>
+    <div class="feedback" id="q-feedback"></div>
+    <div class="fret-grid" id="q-frets"></div>
+    <button class="btn" onclick="skipQuiz()" style="margin-top:8px;">Passer</button>
+  </div>
+</div>
+
+<!-- PANEL 3: GAMMES & POSITIONS -->
+<div class="panel" id="panel-scales">
+  <h2>Gammes & Positions CAGED</h2>
+
+  <div class="controls-row">
+    <div class="control-group">
+      <span class="control-label">Tonique</span>
+      <select id="sc-root" onchange="updateScales()">
+        <option>A</option><option>A#</option><option>B</option><option>C</option>
+        <option>C#</option><option>D</option><option>D#</option><option>E</option>
+        <option>F</option><option>F#</option><option>G</option><option>G#</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Gamme</span>
+      <select id="sc-type" onchange="updateScales()">
+        <option value="minor">Mineure / Pentatonique min</option>
+        <option value="major">Majeure / Pentatonique maj</option>
+        <option value="blues">Blues</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section-title">Position CAGED</div>
+  <div class="positions-row" id="positions-row"></div>
+
+  <div class="scale-info">
+    <div class="info-card">
+      <h3>Notes de la gamme</h3>
+      <div class="note-pills" id="sc-notes"></div>
+    </div>
+    <div class="info-card">
+      <h3>Triade (accord)</h3>
+      <div class="note-pills" id="sc-triad"></div>
+    </div>
+  </div>
+
+  <div class="fretboard-container">
+    <div class="fretboard-wrap">
+      <div class="fretboard" id="scale-fretboard"></div>
+      <div class="fret-numbers" id="scale-fret-numbers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 4: TRIADES -->
+<div class="panel" id="panel-triads">
+  <h2>Triades sur le manche</h2>
+
+  <div class="controls-row">
+    <div class="control-group">
+      <span class="control-label">Tonique</span>
+      <select id="tr-root" onchange="updateTriads()">
+        <option>C</option><option>C#</option><option>D</option><option>D#</option>
+        <option>E</option><option>F</option><option>F#</option><option>G</option>
+        <option>G#</option><option>A</option><option>A#</option><option>B</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Type</span>
+      <select id="tr-type" onchange="updateTriads()">
+        <option value="maj">Majeure</option>
+        <option value="min">Mineure</option>
+        <option value="dim">Diminuée</option>
+        <option value="aug">Augmentée</option>
+        <option value="sus2">Sus2</option>
+        <option value="sus4">Sus4</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Groupe de cordes</span>
+      <select id="tr-strings" onchange="updateTriads()">
+        <option value="123">Cordes 1-2-3 (aiguës)</option>
+        <option value="234">Cordes 2-3-4</option>
+        <option value="345">Cordes 3-4-5</option>
+        <option value="456">Cordes 4-5-6 (graves)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-root)"></div> Fondamentale</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-third)"></div> Tierce</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--note-fifth)"></div> Quinte</div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <div class="info-card" style="display:inline-block; min-width:220px;">
+      <h3>Composition</h3>
+      <div class="note-pills" id="tr-notes"></div>
+    </div>
+  </div>
+
+  <div class="fretboard-container">
+    <div class="fretboard-wrap">
+      <div class="fretboard" id="triad-fretboard"></div>
+      <div class="fret-numbers" id="triad-fret-numbers"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <div class="section-title">Renversements</div>
+    <div id="inversions-info" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
+  </div>
+</div>
+
+<!-- PANEL 5: IMPRO -->
+<div class="panel" id="panel-impro">
+  <h2>Guide d'improvisation</h2>
+
+  <div class="impro-grid">
+    <div class="impro-card">
+      <h3>🎯 La règle des 3 notes</h3>
+      <p>En impro, une phrase de 3 notes suffit. La 1ère pose, la 2ème monte, la 3ème résout. Répète et varie le rythme avant d'ajouter des notes.</p>
+    </div>
+    <div class="impro-card">
+      <h3>🔑 Cadres pour commencer</h3>
+      <ul>
+        <li>Pentatonique min → sur tout accord mineur</li>
+        <li>Pentatonique maj → sur tout accord majeur</li>
+        <li>Blues (ajouter la blue note ♭5)</li>
+        <li>Dorien → son jazz-rock, sur im7</li>
+      </ul>
+    </div>
+    <div class="impro-card">
+      <h3>🎸 Connexions de positions</h3>
+      <p>Apprends les triades (panel Triades) pour te déplacer sur le manche. Chaque position CAGED partage des notes avec la suivante.</p>
+    </div>
+    <div class="impro-card">
+      <h3>📻 Écoute d'abord</h3>
+      <p>Chante la phrase dans ta tête avant de la jouer. L'oreille guide les doigts. Même 2 notes chantées avant de jouer changent tout.</p>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:4px;">Intervalles caractéristiques sur le manche</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Règle d'or</div>
+    <p>Sur deux cordes adjacentes, une même case donne un <strong>intervalle d'une quarte</strong> (5 demi-tons), sauf entre cordes 2 et 3 (Si–Sol) où c'est une tierce majeure. Intègre ça et tu peux calculer n'importe quelle note.</p>
+  </div>
+
+  <table class="interval-table" style="max-width:500px; margin-bottom:20px;">
+    <thead>
+      <tr><th>Intervalle</th><th>Demi-tons</th><th>Sur le manche (même corde)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Unisson</td><td>0</td><td>Même case</td></tr>
+      <tr><td>Seconde maj</td><td>2</td><td>+2 cases</td></tr>
+      <tr><td>Tierce min</td><td>3</td><td>+3 cases</td></tr>
+      <tr><td>Tierce maj</td><td>4</td><td>+4 cases</td></tr>
+      <tr><td>Quarte</td><td>5</td><td>+5 cases / corde suivante même case</td></tr>
+      <tr><td>Triton (♭5)</td><td>6</td><td>+6 cases</td></tr>
+      <tr><td>Quinte</td><td>7</td><td>+7 cases / corde suivante +2 cases</td></tr>
+      <tr><td>Octave</td><td>12</td><td>+12 cases / 2 cordes +2 cases</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">Progressions pour s'entraîner</div>
+  <div class="impro-grid">
+    <div class="impro-card">
+      <h3>Am Blues (rock)</h3>
+      <p style="font-family: 'Space Mono', monospace; font-size:13px;">Am – F – C – G<br>→ Pentatonique La min</p>
+    </div>
+    <div class="impro-card">
+      <h3>I – IV – V (blues)</h3>
+      <p style="font-family: 'Space Mono', monospace; font-size:13px;">A7 – D7 – E7<br>→ Gamme Blues La</p>
+    </div>
+    <div class="impro-card">
+      <h3>Dorien (jazz-rock)</h3>
+      <p style="font-family: 'Space Mono', monospace; font-size:13px;">Dm7 – G7<br>→ Gamme Ré Dorien</p>
+    </div>
+    <div class="impro-card">
+      <h3>ii – V – I (jazz)</h3>
+      <p style="font-family: 'Space Mono', monospace; font-size:13px;">Dm7 – G7 – Cmaj7<br>→ Gamme Do majeure</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+
+const ALL_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_ALIASES = {'Db':'C#','Eb':'D#','Gb':'F#','Ab':'G#','Bb':'A#'};
+
+const SCALES = {
+  major:          [0,2,4,5,7,9,11],
+  minor:          [0,2,3,5,7,8,10],
+  pentatonicMaj:  [0,2,4,7,9],
+  pentatonicMin:  [0,3,5,7,10],
+  blues:          [0,3,5,6,7,10],
+  dorian:         [0,2,3,5,7,9,10],
+  mixolydian:     [0,2,4,5,7,9,10],
+  harmonicMinor:  [0,2,3,5,7,8,11],
+};
+
+const SCALE_DEGREE_NAMES = {
+  major:          ['1','2','3','4','5','6','7'],
+  minor:          ['1','2','♭3','4','5','♭6','♭7'],
+  pentatonicMaj:  ['1','2','3','5','6'],
+  pentatonicMin:  ['1','♭3','4','5','♭7'],
+  blues:          ['1','♭3','4','♭5','5','♭7'],
+  dorian:         ['1','2','♭3','4','5','6','♭7'],
+  mixolydian:     ['1','2','3','4','5','6','♭7'],
+  harmonicMinor:  ['1','2','♭3','4','5','♭6','7'],
+};
+
+// Triads: [root_offset, third_offset, fifth_offset]
+const TRIAD_INTERVALS = {
+  maj: [0, 4, 7],
+  min: [0, 3, 7],
+  dim: [0, 3, 6],
+  aug: [0, 4, 8],
+  sus2:[0, 2, 7],
+  sus4:[0, 5, 7],
+};
+
+// Open string notes (standard tuning, string 1 = high e)
+const OPEN_STRINGS = [4, 11, 7, 2, 9, 4]; // e B G D A E (indices in ALL_NOTES)
+const STRING_NAMES = ['e','B','G','D','A','E'];
+
+// CAGED positions: each position gives a fret range center for pentatonic minor
+const CAGED_POSITIONS = {
+  minor: [
+    { name: 'Pos. E', label: 'E', color: '#c87e7e' },
+    { name: 'Pos. D', label: 'D', color: '#c8a97e' },
+    { name: 'Pos. C', label: 'C', color: '#c8c87e' },
+    { name: 'Pos. A', label: 'A', color: '#7ec87e' },
+    { name: 'Pos. G', label: 'G', color: '#7eb8c8' },
+  ],
+  major: [
+    { name: 'Pos. C', label: 'C', color: '#c87e7e' },
+    { name: 'Pos. A', label: 'A', color: '#c8a97e' },
+    { name: 'Pos. G', label: 'G', color: '#c8c87e' },
+    { name: 'Pos. E', label: 'E', color: '#7ec87e' },
+    { name: 'Pos. D', label: 'D', color: '#7eb8c8' },
+  ],
+};
+
+// Pentatonic minor 5 positions (intervals per string, from root fret on E6)
+// Each position: array of [string_index(0=e, 5=E), fret_offset_from_root]
+// We'll compute positions from root note instead
+
+function getNoteIndex(name) {
+  if (NOTE_ALIASES[name]) name = NOTE_ALIASES[name];
+  return ALL_NOTES.indexOf(name);
+}
+
+function noteAtFret(stringIdx, fret) {
+  return (OPEN_STRINGS[stringIdx] + fret) % 12;
+}
+
+function noteNameAtFret(stringIdx, fret) {
+  return ALL_NOTES[noteAtFret(stringIdx, fret)];
+}
+
+// ═══════════════════════════════════════════════
+// FRETBOARD RENDERER
+// ═══════════════════════════════════════════════
+
+function buildFretboard(containerId, numFrets, noteDataFn, displayFn) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+
+  for (let si = 0; si < 6; si++) {
+    const row = document.createElement('div');
+    row.className = 'string-row';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'string-name';
+    nameEl.textContent = STRING_NAMES[si];
+    row.appendChild(nameEl);
+
+    const nut = document.createElement('div');
+    nut.className = 'nut';
+    row.appendChild(nut);
+
+    for (let fret = 0; fret <= numFrets; fret++) {
+      const cell = document.createElement('div');
+      cell.className = 'fret-cell';
+
+      const info = noteDataFn(si, fret);
+      if (info) {
+        const dot = document.createElement('div');
+        dot.className = 'note-dot ' + info.cls;
+        dot.textContent = displayFn(si, fret, info);
+        cell.appendChild(dot);
+      }
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  }
+}
+
+function buildFretNumbers(containerId, numFrets) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '<div style="width:46px;flex-shrink:0;"></div>';
+  for (let f = 0; f <= numFrets; f++) {
+    const d = document.createElement('div');
+    d.className = 'fret-num';
+    d.textContent = f === 0 ? 'o' : f;
+    el.appendChild(d);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// EXPLORER
+// ═══════════════════════════════════════════════
+
+function updateExplorer() {
+  const root = getNoteIndex(document.getElementById('exp-root').value);
+  const scaleType = document.getElementById('exp-scale').value;
+  const displayMode = document.getElementById('exp-display').value;
+  const numFrets = parseInt(document.getElementById('exp-frets').value);
+  const intervals = SCALES[scaleType];
+  const degrees = SCALE_DEGREE_NAMES[scaleType];
+  const scaleSet = new Set(intervals.map(i => (root + i) % 12));
+  const triNote = (root + (intervals.includes(4) ? 4 : intervals.includes(3) ? 3 : 4)) % 12;
+  const fifthNote = (root + 7) % 12;
+
+  function noteData(si, fret) {
+    const n = noteAtFret(si, fret);
+    if (!scaleSet.has(n)) return null;
+    const offset = (n - root + 12) % 12;
+    const degIdx = intervals.indexOf(offset);
+    let cls = 'dot-scale';
+    if (n === root % 12) cls = 'dot-root';
+    else if (n === triNote) cls = 'dot-third';
+    else if (n === fifthNote) cls = 'dot-fifth';
+    return { cls, n, degIdx, offset };
+  }
+
+  function display(si, fret, info) {
+    if (displayMode === 'names') return ALL_NOTES[info.n];
+    if (displayMode === 'degrees') return degrees[info.degIdx] || '';
+    if (displayMode === 'intervals') {
+      const names = ['U','b2','2','b3','3','4','b5','5','b6','6','b7','7'];
+      return names[info.offset];
+    }
+    return '';
+  }
+
+  buildFretboard('main-fretboard', numFrets, noteData, display);
+  buildFretNumbers('fret-numbers', numFrets);
+}
+
+// ═══════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════
+
+let quizState = { note: null, string: null, answers: [], correct: 0, wrong: 0 };
+
+function startQuiz() {
+  const mode = document.getElementById('q-mode').value;
+  const stringMap = { allStrings: [0,1,2,3,4,5], string6:[5], string5:[4], string4:[3], string3:[2] };
+  const strings = stringMap[mode];
+  quizState.string = strings[Math.floor(Math.random() * strings.length)];
+  quizState.note = ALL_NOTES[Math.floor(Math.random() * 12)];
+
+  document.getElementById('q-note').textContent = quizState.note;
+  const sNames = ['e (1ère)','B (2ème)','G (3ème)','D (4ème)','A (5ème)','E (6ème)'];
+  document.getElementById('q-string').textContent = 'Corde ' + sNames[quizState.string];
+  document.getElementById('q-feedback').textContent = '';
+  document.getElementById('q-feedback').className = 'feedback';
+
+  // Find all correct frets
+  quizState.answers = [];
+  for (let f = 0; f <= 12; f++) {
+    if (noteAtFret(quizState.string, f) === getNoteIndex(quizState.note)) {
+      quizState.answers.push(f);
+    }
+  }
+
+  buildQuizFrets();
+}
+
+function buildQuizFrets() {
+  const grid = document.getElementById('q-frets');
+  grid.innerHTML = '';
+  for (let f = 0; f <= 12; f++) {
+    const btn = document.createElement('button');
+    btn.className = 'fret-btn';
+    btn.textContent = f === 0 ? 'o' : f;
+    btn.onclick = () => checkAnswer(f, btn);
+    grid.appendChild(btn);
+  }
+}
+
+function checkAnswer(fret, btn) {
+  const correct = quizState.answers.includes(fret);
+  if (correct) {
+    btn.className = 'fret-btn correct';
+    quizState.correct++;
+    document.getElementById('q-correct').textContent = quizState.correct;
+    document.getElementById('q-feedback').textContent = '✓ Correct !';
+    document.getElementById('q-feedback').className = 'feedback ok';
+    setTimeout(startQuiz, 900);
+  } else {
+    btn.className = 'fret-btn wrong';
+    quizState.wrong++;
+    document.getElementById('q-wrong').textContent = quizState.wrong;
+    document.getElementById('q-feedback').textContent = '✗ Essaie encore';
+    document.getElementById('q-feedback').className = 'feedback ko';
+  }
+}
+
+function skipQuiz() {
+  // Reveal correct frets
+  const btns = document.querySelectorAll('#q-frets .fret-btn');
+  btns.forEach((btn, i) => {
+    if (quizState.answers.includes(i)) btn.className = 'fret-btn reveal';
+  });
+  quizState.wrong++;
+  document.getElementById('q-wrong').textContent = quizState.wrong;
+  setTimeout(startQuiz, 1200);
+}
+
+// ═══════════════════════════════════════════════
+// SCALES (CAGED positions)
+// ═══════════════════════════════════════════════
+
+let currentPosition = 0;
+
+function updateScales() {
+  const rootName = document.getElementById('sc-root').value;
+  const scType = document.getElementById('sc-type').value;
+  const root = getNoteIndex(rootName);
+  currentPosition = 0;
+
+  const cagedList = CAGED_POSITIONS[scType === 'blues' ? 'minor' : scType];
+
+  // Position row
+  const posRow = document.getElementById('positions-row');
+  posRow.innerHTML = '';
+  cagedList.forEach((pos, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'pos-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = pos.name;
+    btn.style.setProperty('--pos-color', pos.color);
+    btn.onclick = () => selectPosition(i, rootName, scType, root);
+    btn.id = 'pos-btn-' + i;
+    posRow.appendChild(btn);
+  });
+
+  renderScaleInfo(root, scType);
+  renderScaleFretboard(root, scType, 0);
+}
+
+function selectPosition(idx, rootName, scType, root) {
+  currentPosition = idx;
+  document.querySelectorAll('.pos-btn').forEach((b, i) => {
+    b.className = 'pos-btn' + (i === idx ? ' active' : '');
+  });
+  renderScaleFretboard(root, scType, idx);
+}
+
+function renderScaleInfo(root, scType) {
+  const scKey = scType === 'major' ? 'major' : scType === 'blues' ? 'blues' : 'minor';
+  const intervals = SCALES[scKey];
+  const notes = intervals.map(i => ALL_NOTES[(root + i) % 12]);
+
+  const pillsEl = document.getElementById('sc-notes');
+  pillsEl.innerHTML = '';
+  notes.forEach((n, i) => {
+    const p = document.createElement('span');
+    p.className = 'note-pill' + (i === 0 ? ' root' : '');
+    p.textContent = n;
+    pillsEl.appendChild(p);
+  });
+
+  // Triad
+  const triadEl = document.getElementById('sc-triad');
+  triadEl.innerHTML = '';
+  const triadInt = scType === 'major' ? [0,4,7] : [0,3,7];
+  const triadNames = ['root','third','fifth'];
+  triadInt.forEach((t, i) => {
+    const p = document.createElement('span');
+    p.className = 'note-pill ' + triadNames[i];
+    p.textContent = ALL_NOTES[(root + t) % 12];
+    triadEl.appendChild(p);
+  });
+}
+
+// Pentatonic minor 5 positions relative to root on E6 string
+// offsets: how many frets from root on the low E string the pattern starts
+const PENTA_MIN_POSITIONS = [
+  // Position E: root on fret 0 of pattern (low E string)
+  [[5,0],[5,3],[4,0],[4,2],[3,0],[3,2],[2,0],[2,3],[1,0],[1,3],[0,0],[0,3]],
+  // Position D
+  [[5,2],[5,5],[4,2],[4,5],[3,2],[3,4],[2,2],[2,5],[1,3],[1,5],[0,3],[0,5]],
+  // Position C
+  [[5,5],[5,7],[4,5],[4,7],[3,4],[3,7],[2,5],[2,7],[1,5],[1,8],[0,5],[0,8]],
+  // Position A
+  [[5,7],[5,10],[4,7],[4,9],[3,7],[3,9],[2,7],[2,10],[1,8],[1,10],[0,8],[0,10]],
+  // Position G
+  [[5,10],[5,12],[4,9],[4,12],[3,9],[3,12],[2,10],[2,12],[1,10],[1,13],[0,10],[0,13]],
+];
+
+const PENTA_MAJ_POSITIONS = [
+  [[5,0],[5,2],[4,0],[4,2],[3,1],[3,4],[2,2],[2,4],[1,2],[1,5],[0,2],[0,5]],
+  [[5,2],[5,4],[4,2],[4,4],[3,4],[3,6],[2,4],[2,7],[1,5],[1,7],[0,5],[0,7]],
+  [[5,4],[5,7],[4,4],[4,7],[3,6],[3,9],[2,7],[2,9],[1,7],[1,9],[0,7],[0,9]],
+  [[5,7],[5,9],[4,7],[4,9],[3,9],[3,11],[2,9],[2,12],[1,9],[1,12],[0,9],[0,12]],
+  [[5,9],[5,12],[4,9],[4,11],[3,11],[3,14],[2,12],[2,14],[1,12],[1,14],[0,12],[0,14]],
+];
+
+const BLUES_POSITIONS = [
+  [[5,0],[5,3],[4,0],[4,2],[3,0],[3,2],[3,3],[2,0],[2,3],[1,0],[1,3],[0,0],[0,3]],
+  [[5,2],[5,5],[4,2],[4,5],[3,2],[3,4],[3,5],[2,2],[2,5],[1,3],[1,5],[0,3],[0,5]],
+  [[5,5],[5,7],[4,5],[4,7],[3,4],[3,6],[3,7],[2,5],[2,7],[1,5],[1,8],[0,5],[0,8]],
+  [[5,7],[5,10],[4,7],[4,9],[3,7],[3,9],[3,10],[2,7],[2,10],[1,8],[1,10],[0,8],[0,10]],
+  [[5,10],[5,12],[4,9],[4,12],[3,9],[3,12],[3,0],[2,10],[2,12],[1,10],[1,13],[0,10],[0,13]],
+];
+
+function renderScaleFretboard(root, scType, posIdx) {
+  const posData = scType === 'major' ? PENTA_MAJ_POSITIONS[posIdx]
+                : scType === 'blues' ? BLUES_POSITIONS[posIdx]
+                : PENTA_MIN_POSITIONS[posIdx];
+
+  // Find fret range
+  const rootOnE6 = (root - OPEN_STRINGS[5] + 12) % 12;
+  // Show frets adjusted so pattern is visible
+  const fretShifts = posData.map(([s, f]) => rootOnE6 + f);
+  const minFret = Math.max(0, Math.min(...fretShifts));
+  const maxFret = Math.min(15, Math.max(...fretShifts));
+  const showFrets = Math.max(12, maxFret + 1);
+
+  const triadIntervals = scType === 'major' ? [0,4,7] : [0,3,7];
+  const triadNotes = new Set(triadIntervals.map(i => (root + i) % 12));
+
+  const posSet = new Map();
+  posData.forEach(([si, fOffset]) => {
+    const actualFret = rootOnE6 + fOffset;
+    if (actualFret >= 0 && actualFret <= 15) {
+      const key = si + '_' + actualFret;
+      posSet.set(key, true);
+    }
+  });
+
+  function noteData(si, fret) {
+    const key = si + '_' + fret;
+    if (!posSet.has(key)) return null;
+    const n = noteAtFret(si, fret);
+    let cls = 'dot-scale';
+    if (n === root % 12) cls = 'dot-root';
+    else if (triadNotes.has(n)) {
+      const offset = (n - root + 12) % 12;
+      cls = offset === 4 || offset === 3 ? 'dot-third' : 'dot-fifth';
+    }
+    return { cls, n };
+  }
+
+  function display(si, fret, info) {
+    return ALL_NOTES[info.n];
+  }
+
+  buildFretboard('scale-fretboard', showFrets, noteData, display);
+  buildFretNumbers('scale-fret-numbers', showFrets);
+}
+
+// ═══════════════════════════════════════════════
+// TRIADS
+// ═══════════════════════════════════════════════
+
+function updateTriads() {
+  const rootName = document.getElementById('tr-root').value;
+  const trType = document.getElementById('tr-type').value;
+  const stringGroup = document.getElementById('tr-strings').value;
+  const root = getNoteIndex(rootName);
+  const intervals = TRIAD_INTERVALS[trType];
+  const triadNotes = intervals.map(i => (root + i) % 12);
+
+  // Show notes
+  const notesEl = document.getElementById('tr-notes');
+  notesEl.innerHTML = '';
+  const roleNames = ['root','third','fifth'];
+  triadNotes.forEach((n, i) => {
+    const p = document.createElement('span');
+    p.className = 'note-pill ' + roleNames[i];
+    p.textContent = ALL_NOTES[n];
+    notesEl.appendChild(p);
+  });
+
+  const groupMap = { '123': [0,1,2], '234': [1,2,3], '345': [2,3,4], '456': [3,4,5] };
+  const activeStrings = groupMap[stringGroup];
+
+  function noteData(si, fret) {
+    if (!activeStrings.includes(si)) return null;
+    const n = noteAtFret(si, fret);
+    const roleIdx = triadNotes.indexOf(n);
+    if (roleIdx === -1) return null;
+    const cls = ['dot-root','dot-third','dot-fifth'][roleIdx];
+    return { cls, n, roleIdx };
+  }
+
+  function display(si, fret, info) {
+    return ALL_NOTES[info.n];
+  }
+
+  buildFretboard('triad-fretboard', 12, noteData, display);
+  buildFretNumbers('triad-fret-numbers', 12);
+  renderInversions(root, trType, stringGroup);
+}
+
+function renderInversions(root, trType, stringGroup) {
+  const el = document.getElementById('inversions-info');
+  el.innerHTML = '';
+  const intervals = TRIAD_INTERVALS[trType];
+  const names = ['Fondamentale', '1er renversement', '2ème renversement'];
+  const colors = [{ bg: 'var(--note-root)', label: 'note grave = Fondamentale' },
+                  { bg: 'var(--note-third)', label: 'note grave = Tierce' },
+                  { bg: 'var(--note-fifth)', label: 'note grave = Quinte' }];
+
+  names.forEach((n, i) => {
+    const card = document.createElement('div');
+    card.className = 'info-card';
+    card.style.flex = '1';
+    card.style.minWidth = '140px';
+    card.innerHTML = `<h3>${n}</h3>
+      <p style="font-size:12px;color:var(--text-muted);">${colors[i].label}</p>
+      <div style="margin-top:8px;">
+        <span class="note-pill" style="background:${colors[i].bg};color:var(--bg);border:none;">${ALL_NOTES[(root+intervals[i])%12]}</span>
+      </div>`;
+    el.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+
+  if (id === 'scales') updateScales();
+  if (id === 'triads') updateTriads();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+updateExplorer();
+startQuiz();
+</script>
+</body>
+</html>
